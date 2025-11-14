@@ -100,11 +100,54 @@ class VideoEngine:
         # Initialize components
         self.ffmpeg = FFmpegOrchestrator(temp_dir=self.config.temp_dir)
 
-        # Initialize effects and transitions engines
-        effect_config = EffectConfig()
+        # Load effects configuration from TOML
+        from ..config.loader import get_config_loader
+        config_loader = get_config_loader()
+        effects_config = config_loader.load_effects()
+
+        # Initialize effects engine with config from TOML
+        effect_settings = effects_config.get('effects', {})
+        effect_config = EffectConfig(
+            zoom_in_min=effect_settings.get('zoom_in_min', 1.0),
+            zoom_in_max=effect_settings.get('zoom_in_max', 1.15),
+            zoom_out_min=effect_settings.get('zoom_out_min', 1.15),
+            zoom_out_max=effect_settings.get('zoom_out_max', 1.0),
+            pan_amount=effect_settings.get('pan_amount', 0.10),
+            effect_probability=effect_settings.get('effect_probability', 0.75),
+            anti_consecutive=effect_settings.get('anti_consecutive', True)
+        )
         self.effects_engine = EffectsEngine(config=effect_config)
 
-        transition_config = TransitionConfig()
+        # Initialize transitions engine with config from TOML
+        transition_settings = effects_config.get('transitions', {})
+        transition_weights_config = transition_settings.get('weights', {})
+
+        # Convert transition weights to TransitionType enum
+        from ..effects.transitions import TransitionType
+        transition_weights = {}
+        transition_map = {
+            'fade': TransitionType.FADE,
+            'dissolve': TransitionType.DISSOLVE,
+            'cut': TransitionType.CUT,
+            'wipe_left': TransitionType.WIPE_LEFT,
+            'wipe_right': TransitionType.WIPE_RIGHT,
+            'wipe_up': TransitionType.WIPE_UP,
+            'wipe_down': TransitionType.WIPE_DOWN,
+            'slide_left': TransitionType.SLIDE_LEFT,
+            'slide_right': TransitionType.SLIDE_RIGHT,
+            'slide_up': TransitionType.SLIDE_UP,
+            'slide_down': TransitionType.SLIDE_DOWN,
+        }
+
+        for key, transition_type in transition_map.items():
+            if key in transition_weights_config:
+                transition_weights[transition_type] = transition_weights_config[key]
+
+        transition_config = TransitionConfig(
+            default_duration=transition_settings.get('default_duration', 0.5),
+            transition_weights=transition_weights if transition_weights else None,
+            anti_consecutive=transition_settings.get('anti_consecutive', True)
+        )
         self.transitions_engine = TransitionEngine(config=transition_config)
 
         Logger.info("VideoEngine initialized with effects and transitions")
