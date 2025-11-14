@@ -214,10 +214,11 @@ class EffectsEngine:
         zoom_start = self.config.zoom_in_min
         zoom_end = self.config.zoom_in_max
 
-        # zoompan filter: z=zoom, x=x_position, y=y_position, d=duration
+        # Linear interpolation: start + (end - start) * progress
+        # on = output frame number, frames = total frames
         return (
             f"zoompan="
-            f"z='zoom+{(zoom_end - zoom_start) / frames}':"
+            f"z='{zoom_start}+({zoom_end}-{zoom_start})*on/{frames}':"
             f"x='iw/2-(iw/zoom/2)':"
             f"y='ih/2-(ih/zoom/2)':"
             f"d={frames}:"
@@ -230,9 +231,10 @@ class EffectsEngine:
         zoom_start = self.config.zoom_out_min
         zoom_end = self.config.zoom_out_max
 
+        # Linear interpolation from start (zoomed in) to end (normal)
         return (
             f"zoompan="
-            f"z='{zoom_start}-{(zoom_start - zoom_end) / frames}*on':"
+            f"z='{zoom_start}+({zoom_end}-{zoom_start})*on/{frames}':"
             f"x='iw/2-(iw/zoom/2)':"
             f"y='ih/2-(ih/zoom/2)':"
             f"d={frames}:"
@@ -251,25 +253,33 @@ class EffectsEngine:
         """Generate pan filter."""
         pan_amount = self.config.pan_amount
 
+        # Center positions
+        center_x = "iw/2-(iw/zoom/2)"
+        center_y = "ih/2-(ih/zoom/2)"
+
+        # Pan offset (pixels to pan)
+        pan_pixels_x = f"{pan_amount}*iw"
+        pan_pixels_y = f"{pan_amount}*ih"
+
         if direction == 'left':
-            # Start right, move left
-            x_expr = f"'iw/2-(iw/zoom/2)-({pan_amount}*iw/2)+({pan_amount}*iw/{frames})*on'"
-            y_expr = "'ih/2-(ih/zoom/2)'"
+            # Start right, move left: start at +pan, end at -pan
+            x_expr = f"'({center_x})+{pan_pixels_x}*(1-2*on/{frames})'"
+            y_expr = f"'{center_y}'"
 
         elif direction == 'right':
-            # Start left, move right
-            x_expr = f"'iw/2-(iw/zoom/2)+({pan_amount}*iw/2)-({pan_amount}*iw/{frames})*on'"
-            y_expr = "'ih/2-(ih/zoom/2)'"
+            # Start left, move right: start at -pan, end at +pan
+            x_expr = f"'({center_x})+{pan_pixels_x}*(2*on/{frames}-1)'"
+            y_expr = f"'{center_y}'"
 
         elif direction == 'up':
-            # Start bottom, move up
-            x_expr = "'iw/2-(iw/zoom/2)'"
-            y_expr = f"'ih/2-(ih/zoom/2)-({pan_amount}*ih/2)+({pan_amount}*ih/{frames})*on'"
+            # Start bottom, move up: start at +pan, end at -pan
+            x_expr = f"'{center_x}'"
+            y_expr = f"'({center_y})+{pan_pixels_y}*(1-2*on/{frames})'"
 
         else:  # down
-            # Start top, move down
-            x_expr = "'iw/2-(iw/zoom/2)'"
-            y_expr = f"'ih/2-(ih/zoom/2)+({pan_amount}*ih/2)-({pan_amount}*ih/{frames})*on'"
+            # Start top, move down: start at -pan, end at +pan
+            x_expr = f"'{center_x}'"
+            y_expr = f"'({center_y})+{pan_pixels_y}*(2*on/{frames}-1)'"
 
         return (
             f"zoompan="
@@ -293,32 +303,44 @@ class EffectsEngine:
         """Generate Ken Burns (zoom + pan) filter."""
         pan_amount = self.config.pan_amount
 
-        # Zoom settings
+        # Center positions
+        center_x = "iw/2-(iw/zoom/2)"
+        center_y = "ih/2-(ih/zoom/2)"
+
+        # Pan offset (pixels to pan)
+        pan_pixels_x = f"{pan_amount}*iw"
+        pan_pixels_y = f"{pan_amount}*ih"
+
+        # Zoom settings - linear interpolation
         if zoom == 'in':
             zoom_start = self.config.zoom_in_min
             zoom_end = self.config.zoom_in_max
-            zoom_expr = f"'zoom+{(zoom_end - zoom_start) / frames}'"
+            zoom_expr = f"'{zoom_start}+({zoom_end}-{zoom_start})*on/{frames}'"
         else:  # zoom out
             zoom_start = self.config.zoom_out_min
             zoom_end = self.config.zoom_out_max
-            zoom_expr = f"'{zoom_start}-{(zoom_start - zoom_end) / frames}*on'"
+            zoom_expr = f"'{zoom_start}+({zoom_end}-{zoom_start})*on/{frames}'"
 
         # Pan settings
         if pan == 'left':
-            x_expr = f"'iw/2-(iw/zoom/2)-({pan_amount}*iw/2)+({pan_amount}*iw/{frames})*on'"
-            y_expr = "'ih/2-(ih/zoom/2)'"
+            # Start right, move left
+            x_expr = f"'({center_x})+{pan_pixels_x}*(1-2*on/{frames})'"
+            y_expr = f"'{center_y}'"
 
         elif pan == 'right':
-            x_expr = f"'iw/2-(iw/zoom/2)+({pan_amount}*iw/2)-({pan_amount}*iw/{frames})*on'"
-            y_expr = "'ih/2-(ih/zoom/2)'"
+            # Start left, move right
+            x_expr = f"'({center_x})+{pan_pixels_x}*(2*on/{frames}-1)'"
+            y_expr = f"'{center_y}'"
 
         elif pan == 'up':
-            x_expr = "'iw/2-(iw/zoom/2)'"
-            y_expr = f"'ih/2-(ih/zoom/2)-({pan_amount}*ih/2)+({pan_amount}*ih/{frames})*on'"
+            # Start bottom, move up
+            x_expr = f"'{center_x}'"
+            y_expr = f"'({center_y})+{pan_pixels_y}*(1-2*on/{frames})'"
 
         else:  # down
-            x_expr = "'iw/2-(iw/zoom/2)'"
-            y_expr = f"'ih/2-(ih/zoom/2)+({pan_amount}*ih/2)-({pan_amount}*ih/{frames})*on'"
+            # Start top, move down
+            x_expr = f"'{center_x}'"
+            y_expr = f"'({center_y})+{pan_pixels_y}*(2*on/{frames}-1)'"
 
         return (
             f"zoompan="
