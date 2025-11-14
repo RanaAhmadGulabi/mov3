@@ -54,7 +54,7 @@ examples/media/*/*.mp4
 # Generated Videos
 *_final.mp4
 *_temp.mp4
-
+*_temp
 # Metrics
 metrics/*.json
 
