@@ -1,0 +1,71 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Project Specific
+output/
+logs/
+*.log
+temp/
+tmp/
+
+# Media Files (for git, but keep structure)
+examples/audio/*.mp3
+examples/audio/*.wav
+examples/media/*/*.jpg
+examples/media/*/*.png
+examples/media/*/*.mp4
+!examples/audio/.gitkeep
+!examples/media/.gitkeep
+
+# Generated Videos
+*_final.mp4
+*_temp.mp4
+
+# Metrics
+metrics/*.json
+
+# API Keys
+.env
+secrets.yaml
+api_keys.txt
+
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+
+# System
+Thumbs.db

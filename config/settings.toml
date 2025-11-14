@@ -1,0 +1,110 @@
+# Global Settings for mov3 Video Automation Engine
+
+[general]
+project_name = "mov3"
+version = "0.1.0"
+log_level = "INFO"  # DEBUG, INFO, WARNING, ERROR
+
+[paths]
+audio_dir = "examples/audio"
+media_dir = "examples/media"
+output_dir = "output"
+logs_dir = "logs"
+temp_dir = "temp"
+
+[video]
+# Default output settings (can be overridden per job)
+default_resolution = [1920, 1080]  # width, height
+default_fps = 30
+default_codec = "libx264"  # libx264, h264_nvenc, h264_amf
+default_preset = "medium"  # ultrafast, fast, medium, slow, slower
+default_crf = 23  # 0-51, lower = better quality
+
+# Hardware encoder preferences (in order of priority)
+hw_encoders = ["h264_nvenc", "h264_amf"]
+hw_fallback = "libx264"
+
+[audio]
+default_codec = "aac"
+default_bitrate = "192k"
+sample_rate = 44100
+
+[processing]
+# Processing modes
+mode = "quality"  # fast, quality
+max_workers = 4  # for batch processing
+
+# FAST mode settings
+[processing.fast]
+min_clip_duration = 3.0
+max_clip_duration = 8.0
+transitions_enabled = false
+effects_minimal = true
+caption_style = "line"  # line or simple
+
+# QUALITY mode settings
+[processing.quality]
+min_clip_duration = 2.0
+max_clip_duration = 5.0
+transitions_enabled = true
+effects_full = true
+caption_style = "word"  # word-level karaoke
+
+[clips]
+# Clip planning settings
+min_duration = 2.0  # seconds
+max_duration = 5.0
+overlap_duration = 0.5
+soft_budget_tolerance = 0.25  # ±25% smoothing
+rounding_correction = true
+error_absorption = true
+
+# Media selection
+selection_mode = "sequential"  # sequential, random
+anti_consecutive = true  # prevent same file twice in a row
+shuffle_on_reuse = true
+
+[media]
+# Supported formats
+image_formats = [".jpg", ".jpeg", ".png", ".bmp", ".webp"]
+video_formats = [".mp4", ".mov", ".avi", ".mkv", ".webm"]
+audio_formats = [".mp3", ".wav", ".flac", ".m4a", ".ogg"]
+
+# Media handling
+normalize_resolution = true
+maintain_aspect_ratio = true
+video_reuse_different_segments = true
+min_video_segment_duration = 3.0
+
+[validation]
+# Pre-flight validation
+check_media_count = true
+warn_insufficient_media = true
+prompt_on_shortage = true  # ask user to continue or cancel
+min_media_files = 3  # minimum recommended
+
+[transitions]
+default_duration = 0.5  # seconds
+available = ["fade", "slide", "wipe", "dissolve", "zoom"]
+random_selection = true
+
+[captions]
+enabled = false
+type = "closed"  # closed, burned, karaoke
+language = "en"
+whisper_model = "base"  # tiny, base, small, medium, large
+style_preset = "default"
+
+[metrics]
+enabled = true
+output_dir = "metrics"
+track_per_clip = true
+track_processing_time = true
+track_failures = true
+export_format = "json"
+
+[ui]
+theme = "professional"
+high_dpi = true
+window_size = [1200, 800]
+log_window_height = 200
