@@ -48,17 +48,17 @@ anti_consecutive = true  # Don't use same transition twice in a row
 
 # Transition weights (relative probabilities)
 [transitions.weights]
-fade = 35              # 35% - Most common and smooth
-dissolve = 25          # 25% - Similar to fade
-cut = 15               # 15% - No transition (simple cut)
-wipe_left = 5
-wipe_right = 5
-wipe_up = 2.5
-wipe_down = 2.5
-slide_left = 5
-slide_right = 5
-slide_up = 2.5
-slide_down = 2.5
+fade = 40              # 40% - Most common and smooth
+dissolve = 30          # 30% - Similar to fade
+cut = 0                # 0% - Disabled (we use actual transitions)
+wipe_left = 6
+wipe_right = 6
+wipe_up = 3
+wipe_down = 3
+slide_left = 6
+slide_right = 6
+slide_up = 3
+slide_down = 3
 
 # Media variation settings when reusing content
 [variations]
