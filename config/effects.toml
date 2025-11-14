@@ -1,50 +1,64 @@
 # Effects Configuration for mov3 Video Automation Engine
 
-[kenburns]
+# Main effect settings (Pan & Zoom)
+[effects]
 enabled = true
-zoom_min = 0.95
-zoom_max = 1.10
-pan_amount = 0.05
-duration_multiplier = 1.0
 
-[color_filters]
+# Zoom settings
+zoom_in_min = 1.0     # Starting zoom level for zoom in
+zoom_in_max = 1.15    # Ending zoom level for zoom in (subtle 15% zoom)
+zoom_out_min = 1.15   # Starting zoom level for zoom out
+zoom_out_max = 1.0    # Ending zoom level for zoom out
+
+# Pan settings (as percentage of frame)
+pan_amount = 0.10     # Pan 10% of frame width/height
+
+# Effect probability
+effect_probability = 0.75  # 75% of clips get effects, 25% stay static
+anti_consecutive = true    # Don't use same effect twice in a row
+
+# Effect weights (relative probabilities, will be normalized)
+# Higher number = more likely to be selected
+[effects.weights]
+none = 25              # 25% - No effect (static)
+zoom_in = 15           # 15% - Simple zoom in
+zoom_out = 10          # 10% - Simple zoom out
+pan_left = 8
+pan_right = 8
+pan_up = 5
+pan_down = 5
+ken_burns_1 = 12       # Ken Burns: zoom in + pan right
+ken_burns_2 = 12       # Ken Burns: zoom in + pan left
+ken_burns_3 = 8        # Ken Burns: zoom out + pan right
+ken_burns_4 = 8        # Ken Burns: zoom out + pan left
+zoom_in_pan_right = 6
+zoom_in_pan_left = 6
+zoom_in_pan_up = 4
+zoom_in_pan_down = 4
+zoom_out_pan_right = 4
+zoom_out_pan_left = 4
+zoom_out_pan_up = 3
+zoom_out_pan_down = 3
+
+# Transition settings
+[transitions]
 enabled = true
-available = ["sepia", "vintage", "cool", "warm", "noir", "vibrant"]
-probability = 0.3  # 30% chance to apply a color filter
+default_duration = 0.5  # Duration in seconds
+anti_consecutive = true  # Don't use same transition twice in a row
 
-[glitch]
-enabled = true
-intensity_min = 0.1
-intensity_max = 0.3
-duration_ms = 100
-probability = 0.15
-
-[slide]
-enabled = true
-directions = ["left", "right", "up", "down"]
-speed = "medium"  # slow, medium, fast
-
-[fade]
-enabled = true
-duration_ms = 500
-type = "crossfade"  # crossfade, fade_in, fade_out
-
-[zoom]
-enabled = true
-zoom_in_max = 1.5
-zoom_out_min = 0.8
-duration_multiplier = 1.0
-
-[rotation]
-enabled = false
-max_degrees = 5
-probability = 0.1
-
-[blur]
-enabled = false
-intensity_min = 1
-intensity_max = 5
-probability = 0.05
+# Transition weights (relative probabilities)
+[transitions.weights]
+fade = 35              # 35% - Most common and smooth
+dissolve = 25          # 25% - Similar to fade
+cut = 15               # 15% - No transition (simple cut)
+wipe_left = 5
+wipe_right = 5
+wipe_up = 2.5
+wipe_down = 2.5
+slide_left = 5
+slide_right = 5
+slide_up = 2.5
+slide_down = 2.5
 
 # Media variation settings when reusing content
 [variations]
@@ -54,3 +68,9 @@ position_offset_max = 0.1  # 10% of frame
 brightness_range = [-0.1, 0.1]
 flip_horizontal_prob = 0.2
 flip_vertical_prob = 0.0
+
+# Color filters (coming soon - disabled for now)
+[color_filters]
+enabled = false
+available = ["warm", "cool"]
+probability = 0.2

@@ -14,6 +14,8 @@ from ..config.loader import Config
 from ..media.selector import MediaSelector, SelectionMode, MediaType
 from ..core.planner import DurationPlanner, ClipPlan
 from ..ffmpeg.orchestrator import FFmpegOrchestrator
+from ..effects.effects import EffectsEngine, EffectConfig
+from ..effects.transitions import TransitionEngine, TransitionConfig
 from ..utils.logger import Logger
 
 
@@ -98,7 +100,14 @@ class VideoEngine:
         # Initialize components
         self.ffmpeg = FFmpegOrchestrator(temp_dir=self.config.temp_dir)
 
-        Logger.info("VideoEngine initialized")
+        # Initialize effects and transitions engines
+        effect_config = EffectConfig()
+        self.effects_engine = EffectsEngine(config=effect_config)
+
+        transition_config = TransitionConfig()
+        self.transitions_engine = TransitionEngine(config=transition_config)
+
+        Logger.info("VideoEngine initialized with effects and transitions")
 
     def _setup_directories(self):
         """Create necessary directories."""
@@ -389,6 +398,24 @@ class VideoEngine:
                 avoid_file=media_selector.last_selected if config.anti_consecutive else None
             )
 
+            # Select random effect
+            effect = self.effects_engine.select_random_effect()
+            effect_name = self.effects_engine.get_effect_name(effect)
+
+            # Generate effect filter
+            effect_filter = self.effects_engine.generate_filter(
+                effect=effect,
+                width=config.resolution[0],
+                height=config.resolution[1],
+                duration=selection.duration,
+                fps=config.fps
+            )
+
+            if effect_filter:
+                Logger.debug(f"Clip {clip_index}: {effect_name}")
+            else:
+                Logger.debug(f"Clip {clip_index}: No effect")
+
             # Generate temp file path
             temp_file = Path(config.temp_dir) / f"clip_{clip_index:04d}.mp4"
 
@@ -402,7 +429,8 @@ class VideoEngine:
                     fps=config.fps,
                     codec=config.codec,
                     preset=config.preset,
-                    crf=config.crf
+                    crf=config.crf,
+                    effect_filter=effect_filter
                 )
             else:  # VIDEO
                 success = self.ffmpeg.encode_video_clip(
@@ -414,10 +442,12 @@ class VideoEngine:
                     fps=config.fps,
                     codec=config.codec,
                     preset=config.preset,
-                    crf=config.crf
+                    crf=config.crf,
+                    effect_filter=effect_filter
                 )
 
             if success:
+                Logger.debug(f"✓ Clip {clip_index} encoded successfully")
                 return str(temp_file)
             else:
                 Logger.error(f"Failed to encode clip {clip_index}")
