@@ -405,7 +405,8 @@ class FFmpegOrchestrator:
         clip_paths: List[str],
         output_path: str,
         audio_path: Optional[str] = None,
-        transition_duration: float = 0.5
+        transition_duration: float = 0.5,
+        transitions: Optional[List[str]] = None
     ) -> bool:
         """
         Concatenate multiple clips with transitions.
@@ -415,6 +416,8 @@ class FFmpegOrchestrator:
             output_path: Output file path
             audio_path: Optional audio file to mux
             transition_duration: Duration of crossfade transitions
+            transitions: List of xfade transition names (e.g., ['fade', 'dissolve'])
+                        If None, uses 'fade' for all. One per transition (len = clips - 1)
 
         Returns:
             True if successful
@@ -424,12 +427,15 @@ class FFmpegOrchestrator:
             return False
 
         try:
-            if len(clip_paths) == 1 and transition_duration == 0:
-                # Simple case: just copy or mux with audio
+            if len(clip_paths) == 1:
+                # Single clip: just mux with audio
                 return self._simple_concat(clip_paths[0], output_path, audio_path)
+            elif transition_duration == 0:
+                # No transitions requested: simple concat
+                return self._simple_concat_multiple(clip_paths, output_path, audio_path)
             else:
-                # Complex case: use xfade transitions
-                return self._xfade_concat(clip_paths, output_path, audio_path, transition_duration)
+                # Use xfade transitions
+                return self._xfade_concat(clip_paths, output_path, audio_path, transition_duration, transitions)
 
         except Exception as e:
             Logger.error(f"Error concatenating clips: {e}")
@@ -479,21 +485,14 @@ class FFmpegOrchestrator:
             Logger.error(f"Error in simple concat: {e}")
             return False
 
-    def _xfade_concat(
+    def _simple_concat_multiple(
         self,
         clip_paths: List[str],
         output_path: str,
-        audio_path: Optional[str] = None,
-        transition_duration: float = 0.5
+        audio_path: Optional[str] = None
     ) -> bool:
-        """
-        Concatenate clips with xfade transitions.
-
-        This is complex and requires building a filter graph.
-        """
+        """Simple concatenation without transitions using concat demuxer."""
         try:
-            # For now, use concat demuxer (simpler but no transitions)
-            # TODO: Implement proper xfade filter chain
             concat_file = self.temp_dir / "concat_list.txt"
 
             with open(concat_file, 'w') as f:
@@ -520,13 +519,13 @@ class FFmpegOrchestrator:
 
             cmd.extend(["-y", output_path])
 
-            Logger.debug(f"Concatenating {len(clip_paths)} clips")
+            Logger.debug(f"Concatenating {len(clip_paths)} clips (no transitions)")
 
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=600  # 10 minutes for concatenation
+                timeout=600
             )
 
             if result.returncode != 0:
@@ -536,7 +535,141 @@ class FFmpegOrchestrator:
             return True
 
         except Exception as e:
+            Logger.error(f"Error in simple concat: {e}")
+            return False
+
+    def _xfade_concat(
+        self,
+        clip_paths: List[str],
+        output_path: str,
+        audio_path: Optional[str] = None,
+        transition_duration: float = 0.5,
+        transitions: Optional[List[str]] = None
+    ) -> bool:
+        """
+        Concatenate clips with xfade transitions.
+
+        Builds a complex filter graph for smooth transitions between clips.
+        """
+        try:
+            num_clips = len(clip_paths)
+
+            # Default to 'fade' if no transitions specified
+            if transitions is None:
+                transitions = ['fade'] * (num_clips - 1)
+
+            # Ensure we have the right number of transitions
+            if len(transitions) != num_clips - 1:
+                Logger.warning(f"Expected {num_clips - 1} transitions, got {len(transitions)}. Using fade for missing.")
+                transitions = transitions[:num_clips - 1]
+                while len(transitions) < num_clips - 1:
+                    transitions.append('fade')
+
+            # Get duration of each clip
+            Logger.debug("Getting clip durations...")
+            clip_durations = []
+            for clip_path in clip_paths:
+                info = self.get_media_info(clip_path)
+                duration = info.get('duration', 0)
+                if duration == 0:
+                    Logger.error(f"Could not get duration for {clip_path}")
+                    return False
+                clip_durations.append(duration)
+
+            # Build xfade filter chain
+            Logger.debug("Building xfade filter chain...")
+            filter_parts = []
+            current_offset = 0.0
+
+            for i in range(num_clips - 1):
+                transition = transitions[i]
+
+                # Calculate offset for this transition
+                # Offset is when the second clip starts overlapping
+                if i == 0:
+                    # First transition
+                    offset = clip_durations[0] - transition_duration
+                else:
+                    # Subsequent transitions
+                    offset = current_offset + clip_durations[i] - transition_duration
+
+                current_offset = offset
+
+                # Build xfade filter
+                if i == 0:
+                    # First transition: [0:v][1:v]xfade...
+                    input_label = "[0:v][1:v]"
+                    output_label = "[v01]" if num_clips > 2 else "[outv]"
+                else:
+                    # Subsequent: [vXY][Z:v]xfade...
+                    prev_label = f"[v{i-1}{i}]"
+                    input_label = f"{prev_label}[{i+1}:v]"
+                    output_label = f"[v{i}{i+1}]" if i < num_clips - 2 else "[outv]"
+
+                filter_parts.append(
+                    f"{input_label}xfade=transition={transition}:"
+                    f"duration={transition_duration}:offset={offset:.3f}{output_label}"
+                )
+
+            filter_complex = ";".join(filter_parts)
+
+            Logger.debug(f"Filter complex: {filter_complex}")
+
+            # Build FFmpeg command
+            cmd = [self.ffmpeg_path]
+
+            # Add all clip inputs
+            for clip_path in clip_paths:
+                cmd.extend(["-i", clip_path])
+
+            # Add audio if provided
+            if audio_path:
+                cmd.extend(["-i", audio_path])
+
+            # Add filter complex
+            cmd.extend([
+                "-filter_complex", filter_complex,
+                "-map", "[outv]"
+            ])
+
+            # Map audio
+            if audio_path:
+                cmd.extend([
+                    "-map", f"{num_clips}:a",
+                    "-c:a", "aac",
+                    "-b:a", "192k",
+                    "-shortest"
+                ])
+
+            # Video encoding settings
+            cmd.extend([
+                "-c:v", "libx264",
+                "-preset", "medium",
+                "-crf", "23",
+                "-pix_fmt", "yuv420p",
+                "-y",
+                output_path
+            ])
+
+            Logger.info(f"Concatenating {num_clips} clips with {len(transitions)} transitions...")
+
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=1800  # 30 minutes for long videos
+            )
+
+            if result.returncode != 0:
+                Logger.error(f"xfade concatenation failed: {result.stderr}")
+                return False
+
+            Logger.info("✓ Concatenation with transitions completed")
+            return True
+
+        except Exception as e:
             Logger.error(f"Error in xfade concat: {e}")
+            Logger.exception("Full traceback:")
             return False
 
     def add_audio(

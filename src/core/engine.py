@@ -255,16 +255,56 @@ class VideoEngine:
             result.status = JobStatus.FINALIZING
             self._report_progress("Finalizing video...", 90)
 
-            # Concatenate clips
+            # Select random transitions for each clip boundary
+            transitions_list = []
+            use_transitions = True  # Flag to track if we're using transitions
+
+            if len(clip_files) > 1:
+                Logger.info(f"Selecting transitions for {len(clip_files) - 1} clip boundaries")
+                for i in range(len(clip_files) - 1):
+                    transition_type = self.transitions_engine.select_random_transition()
+                    transition_name = self.transitions_engine.get_xfade_transition(transition_type)
+
+                    if transition_name:
+                        transitions_list.append(transition_name)
+                        Logger.debug(
+                            f"Transition {i}: {self.transitions_engine.get_transition_name(transition_type)}"
+                        )
+                    else:
+                        # CUT selected - use simple concat instead
+                        Logger.debug(f"Cut transition selected - will use simple concatenation")
+                        use_transitions = False
+                        break
+
+                # If we stopped early due to CUT, clear transitions list
+                if not use_transitions:
+                    transitions_list = []
+
+            # Concatenate clips with transitions
             output_file = Path(job_config.output_dir) / f"{audio_name}_final.mp4"
             result.output_file = str(output_file)
 
-            success = self.ffmpeg.concatenate_clips(
-                clip_paths=clip_files,
-                output_path=str(output_file),
-                audio_path=str(audio_path),
-                transition_duration=0.0  # TODO: Add transition support
-            )
+            # Use transition duration from config (default 0.5s)
+            transition_duration = 0.5
+
+            if use_transitions and transitions_list:
+                Logger.info(f"Using xfade transitions: {len(transitions_list)} transitions")
+                success = self.ffmpeg.concatenate_clips(
+                    clip_paths=clip_files,
+                    output_path=str(output_file),
+                    audio_path=str(audio_path),
+                    transition_duration=transition_duration,
+                    transitions=transitions_list
+                )
+            else:
+                Logger.info("Using simple concatenation (no transitions)")
+                success = self.ffmpeg.concatenate_clips(
+                    clip_paths=clip_files,
+                    output_path=str(output_file),
+                    audio_path=str(audio_path),
+                    transition_duration=0.0,
+                    transitions=None
+                )
 
             if not success:
                 result.status = JobStatus.FAILED
