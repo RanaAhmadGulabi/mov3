@@ -4,14 +4,14 @@
 [effects]
 enabled = true
 
-# Zoom settings
+# Zoom settings - increased for visibility
 zoom_in_min = 1.0     # Starting zoom level for zoom in
-zoom_in_max = 1.15    # Ending zoom level for zoom in (subtle 15% zoom)
-zoom_out_min = 1.15   # Starting zoom level for zoom out
+zoom_in_max = 1.25    # Ending zoom level for zoom in (25% zoom for visibility)
+zoom_out_min = 1.25   # Starting zoom level for zoom out
 zoom_out_max = 1.0    # Ending zoom level for zoom out
 
-# Pan settings (as percentage of frame)
-pan_amount = 0.10     # Pan 10% of frame width/height
+# Pan settings (as percentage of frame) - increased for visibility
+pan_amount = 0.15     # Pan 15% of frame width/height
 
 # Effect probability
 effect_probability = 0.75  # 75% of clips get effects, 25% stay static

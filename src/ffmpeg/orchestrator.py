@@ -279,13 +279,12 @@ class FFmpegOrchestrator:
 
             filter_str = ",".join(filter_parts)
 
+            # Build command - note: when using zoompan, don't use -r flag
             cmd = [
                 self.ffmpeg_path,
                 "-loop", "1",
                 "-i", image_path,
-                "-t", str(duration),
                 "-vf", filter_str,
-                "-r", str(fps),
                 "-c:v", codec,
                 "-preset", preset,
                 "-crf", str(crf),
@@ -293,6 +292,13 @@ class FFmpegOrchestrator:
                 "-y",
                 output_path
             ]
+
+            # Only add -r if NOT using effect_filter (zoompan sets fps internally)
+            if not effect_filter:
+                cmd.insert(4, "-r")
+                cmd.insert(5, str(fps))
+                cmd.insert(4, "-t")
+                cmd.insert(5, str(duration))
 
             Logger.debug(f"Encoding image clip with filter: {filter_str}")
 
@@ -366,13 +372,12 @@ class FFmpegOrchestrator:
 
             filter_str = ",".join(filter_parts)
 
+            # Build command - when using zoompan, it controls fps internally
             cmd = [
                 self.ffmpeg_path,
                 "-ss", str(start_time),
                 "-i", video_path,
-                "-t", str(duration),
                 "-vf", filter_str,
-                "-r", str(fps),
                 "-c:v", codec,
                 "-preset", preset,
                 "-crf", str(crf),
@@ -380,6 +385,13 @@ class FFmpegOrchestrator:
                 "-y",
                 output_path
             ]
+
+            # Only add -t and -r if NOT using effect_filter (zoompan handles duration/fps)
+            if not effect_filter:
+                cmd.insert(4, "-t")
+                cmd.insert(5, str(duration))
+                cmd.insert(6, "-r")
+                cmd.insert(7, str(fps))
 
             Logger.debug(f"Encoding video clip with filter: {filter_str}")
 
