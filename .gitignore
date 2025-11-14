@@ -45,6 +45,7 @@ tmp/
 examples/audio/*.mp3
 examples/audio/*.wav
 examples/media/*/*.jpg
+examples/media/*/*.jpeg
 examples/media/*/*.png
 examples/media/*/*.mp4
 !examples/audio/.gitkeep
