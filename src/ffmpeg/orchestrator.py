@@ -238,7 +238,8 @@ class FFmpegOrchestrator:
         codec: str = "libx264",
         preset: str = "medium",
         crf: int = 23,
-        filters: Optional[List[str]] = None
+        filters: Optional[List[str]] = None,
+        effect_filter: Optional[str] = None
     ) -> bool:
         """
         Encode an image into a video clip.
@@ -253,6 +254,7 @@ class FFmpegOrchestrator:
             preset: Encoding preset
             crf: Constant Rate Factor (quality)
             filters: Additional FFmpeg filters
+            effect_filter: Effect filter (e.g., zoompan) - applied BEFORE scaling
 
         Returns:
             True if successful
@@ -261,11 +263,17 @@ class FFmpegOrchestrator:
             width, height = resolution
 
             # Build filter chain
-            filter_parts = [
-                f"scale={width}:{height}:force_original_aspect_ratio=increase",
-                f"crop={width}:{height}"
-            ]
+            filter_parts = []
 
+            # Apply effect first if provided (zoompan works on original image)
+            if effect_filter:
+                filter_parts.append(effect_filter)
+            else:
+                # If no effect, need to scale and crop
+                filter_parts.append(f"scale={width}:{height}:force_original_aspect_ratio=increase")
+                filter_parts.append(f"crop={width}:{height}")
+
+            # Add any additional filters
             if filters:
                 filter_parts.extend(filters)
 
@@ -286,7 +294,7 @@ class FFmpegOrchestrator:
                 output_path
             ]
 
-            Logger.debug(f"Encoding image clip: {' '.join(cmd)}")
+            Logger.debug(f"Encoding image clip with filter: {filter_str}")
 
             result = subprocess.run(
                 cmd,
@@ -316,7 +324,8 @@ class FFmpegOrchestrator:
         codec: str = "libx264",
         preset: str = "medium",
         crf: int = 23,
-        filters: Optional[List[str]] = None
+        filters: Optional[List[str]] = None,
+        effect_filter: Optional[str] = None
     ) -> bool:
         """
         Extract and encode a video clip segment.
@@ -332,6 +341,7 @@ class FFmpegOrchestrator:
             preset: Encoding preset
             crf: Constant Rate Factor
             filters: Additional FFmpeg filters
+            effect_filter: Effect filter (e.g., zoompan) - applied BEFORE scaling
 
         Returns:
             True if successful
@@ -340,11 +350,17 @@ class FFmpegOrchestrator:
             width, height = resolution
 
             # Build filter chain
-            filter_parts = [
-                f"scale={width}:{height}:force_original_aspect_ratio=increase",
-                f"crop={width}:{height}"
-            ]
+            filter_parts = []
 
+            # Apply effect first if provided
+            if effect_filter:
+                filter_parts.append(effect_filter)
+            else:
+                # If no effect, need to scale and crop
+                filter_parts.append(f"scale={width}:{height}:force_original_aspect_ratio=increase")
+                filter_parts.append(f"crop={width}:{height}")
+
+            # Add any additional filters
             if filters:
                 filter_parts.extend(filters)
 
@@ -365,7 +381,7 @@ class FFmpegOrchestrator:
                 output_path
             ]
 
-            Logger.debug(f"Encoding video clip: {' '.join(cmd)}")
+            Logger.debug(f"Encoding video clip with filter: {filter_str}")
 
             result = subprocess.run(
                 cmd,
