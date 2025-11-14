@@ -1,0 +1,56 @@
+# Effects Configuration for mov3 Video Automation Engine
+
+[kenburns]
+enabled = true
+zoom_min = 0.95
+zoom_max = 1.10
+pan_amount = 0.05
+duration_multiplier = 1.0
+
+[color_filters]
+enabled = true
+available = ["sepia", "vintage", "cool", "warm", "noir", "vibrant"]
+probability = 0.3  # 30% chance to apply a color filter
+
+[glitch]
+enabled = true
+intensity_min = 0.1
+intensity_max = 0.3
+duration_ms = 100
+probability = 0.15
+
+[slide]
+enabled = true
+directions = ["left", "right", "up", "down"]
+speed = "medium"  # slow, medium, fast
+
+[fade]
+enabled = true
+duration_ms = 500
+type = "crossfade"  # crossfade, fade_in, fade_out
+
+[zoom]
+enabled = true
+zoom_in_max = 1.5
+zoom_out_min = 0.8
+duration_multiplier = 1.0
+
+[rotation]
+enabled = false
+max_degrees = 5
+probability = 0.1
+
+[blur]
+enabled = false
+intensity_min = 1
+intensity_max = 5
+probability = 0.05
+
+# Media variation settings when reusing content
+[variations]
+enabled = true
+zoom_range = [0.95, 1.15]
+position_offset_max = 0.1  # 10% of frame
+brightness_range = [-0.1, 0.1]
+flip_horizontal_prob = 0.2
+flip_vertical_prob = 0.0

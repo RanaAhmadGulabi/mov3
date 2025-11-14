@@ -1,0 +1,86 @@
+# Caption Styling Configuration for mov3
+
+[default]
+name = "Default"
+font = "Arial"
+font_size = 24
+bold = true
+italic = false
+primary_color = "&H00FFFFFF"  # White
+outline_color = "&H00000000"  # Black
+outline = 2
+shadow = 1
+alignment = 2  # Bottom center
+margin_v = 20
+margin_l = 10
+margin_r = 10
+
+[modern_bold]
+name = "Modern Bold"
+font = "Montserrat"
+font_size = 28
+bold = true
+italic = false
+primary_color = "&H00FFFFFF"
+outline_color = "&H00000000"
+outline = 3
+shadow = 2
+alignment = 2
+margin_v = 30
+
+[minimal]
+name = "Minimal"
+font = "Helvetica"
+font_size = 22
+bold = false
+italic = false
+primary_color = "&H00FFFFFF"
+outline_color = "&H00000000"
+outline = 1
+shadow = 0
+alignment = 2
+margin_v = 15
+
+[karaoke_highlight]
+name = "Karaoke Highlight"
+font = "Impact"
+font_size = 26
+bold = true
+italic = false
+primary_color = "&H00FFFFFF"
+secondary_color = "&H00FFFF00"  # Yellow highlight
+outline_color = "&H00000000"
+outline = 2
+shadow = 2
+alignment = 2
+margin_v = 25
+karaoke_effect = true
+
+[subtitle_style]
+name = "Subtitle Style"
+font = "Arial"
+font_size = 20
+bold = false
+italic = false
+primary_color = "&H00FFFFFF"
+outline_color = "&H00000000"
+outline = 1
+shadow = 1
+alignment = 2
+margin_v = 10
+background = true
+background_color = "&H80000000"  # Semi-transparent black
+
+[tiktok_style]
+name = "TikTok Style"
+font = "Proxima Nova"
+font_size = 32
+bold = true
+italic = false
+primary_color = "&H00FFFFFF"
+outline_color = "&H00FF1493"  # Pink outline
+outline = 3
+shadow = 2
+alignment = 5  # Center
+margin_v = 0
+stroke_style = "glow"
